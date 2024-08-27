@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,5 +11,5 @@ func TestTCPTransport(t *testing.T) {
 	tr := NewTCPTransport(listenAddr)
 	assert.Equal(t, tr.listenAddress, listenAddr)
 
-	tr.ListenAndAccept()
+	assert.Nil(t, tr.ListenAndAccept())
 }
