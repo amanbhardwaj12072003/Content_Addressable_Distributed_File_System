@@ -23,6 +23,11 @@ func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	}
 }
 
+// Close implements the Peer interface
+func (p *TCPPeer) Close() error {
+	return p.Conn.Close()
+}
+
 type TCPTransportOpts struct {
 	ListenAddr    string
 	HandshakeFunc HandshakeFunc
@@ -85,13 +90,14 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 	}
 
 	// Read Loop
-	rpc := &RPC{}
+	rpc := RPC{}
 	for {
-		if err := t.Decoder.Decode(conn, rpc); err != nil {
+		if err := t.Decoder.Decode(conn, &rpc); err != nil {
 			fmt.Printf("TCP Error: %s\n", err)
 			continue
 		}
 		rpc.From = conn.RemoteAddr()
+		t.rpcch <- rpc
 		fmt.Printf("Message: %v\n", rpc)
 	}
 }
