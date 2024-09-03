@@ -6,6 +6,19 @@ import (
 	"testing"
 )
 
+func newStore() *Store {
+	opts := StoreOpts{
+		PathTransformFunc: CASPathTransformFunc,
+	}
+	return NewStore(opts)
+}
+
+func teardown(t *testing.T, s *Store) {
+	if err := s.Clear(); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestPathTransformFunc(t *testing.T) {
 	key := "dogsbestpicture"
 	pathKey := CASPathTransformFunc(key)
@@ -37,15 +50,17 @@ func TestStoreDelete(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	opts := StoreOpts{
-		PathTransformFunc: CASPathTransformFunc,
-	}
-	s := NewStore(opts)
+	s := newStore()
+	defer teardown(t, s)
 	key := "myspecialpicture"
 	data := []byte("some jpg bytes")
 
 	if err := s.writeStream(key, bytes.NewReader(data)); err != nil {
 		t.Error(err)
+	}
+
+	if ok := s.Has(key); !ok {
+		t.Errorf("expevted to have key %s", key)
 	}
 
 	r, err := s.Read(key)
