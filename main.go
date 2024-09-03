@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/amanbhardwaj12072003/Distributed_File_Storage/p2p"
 )
@@ -22,9 +23,12 @@ func main() {
 	}
 	s := NewFileServer(fileServerOpts)
 
+	go func() {
+		time.Sleep(time.Second * 3)
+		s.Stop()
+	}()
+
 	if err := s.Start(); err != nil {
 		log.Fatal(err)
 	}
-
-	select {}
 }
