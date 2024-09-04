@@ -59,13 +59,10 @@ func (s *FileServer) StoreData(key string, r io.Reader) error {
 	// 1. Store this file to the disk.
 	// 2. Broadcast this file to all known peers in the network.
 
-	if err := s.store.Write(key, r); err != nil {
-		return err
-	}
-
 	buf := new(bytes.Buffer)
-	_, err := io.Copy(buf, r)
-	if err != nil {
+	tee := io.TeeReader(r, buf)
+
+	if err := s.store.Write(key, tee); err != nil {
 		return err
 	}
 
