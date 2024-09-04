@@ -24,15 +24,9 @@ func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	}
 }
 
-// RemoteAddr implemenmts the peer interface and will return the
-// remote address of it's underlying connection.
-func (p *TCPPeer) RemoteAddr() net.Addr {
-	return p.Conn.RemoteAddr()
-}
-
-// Close implements the Peer interface
-func (p *TCPPeer) Close() error {
-	return p.Conn.Close()
+func (p *TCPPeer) Send(b []byte) error {
+	_, err := p.Conn.Write(b)
+	return err
 }
 
 type TCPTransportOpts struct {
@@ -100,7 +94,7 @@ func (t *TCPTransport) startAcceptLoop() {
 		if err != nil {
 			fmt.Printf("TCP Accept Error: %s\n", err)
 		}
-		fmt.Printf("new incoming connection: %+v\n", conn)
+		// fmt.Printf("new incoming connection: %+v\n", conn)
 		go t.handleConn(conn, false)
 	}
 }
