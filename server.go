@@ -43,8 +43,11 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 }
 
 type Message struct {
-	From    string
 	Payload any
+}
+
+type MessageStoreFile struct {
+	Key string
 }
 
 func (s *FileServer) broadcast(msg *Message) error {
@@ -62,7 +65,9 @@ func (s *FileServer) StoreData(key string, r io.Reader) error {
 
 	buf := new(bytes.Buffer)
 	msg := Message{
-		Payload: []byte("storagekey"),
+		Payload: MessageStoreFile{
+			Key: key,
+		},
 	}
 	if err := gob.NewEncoder(buf).Encode(msg); err != nil {
 		return err
@@ -126,12 +131,15 @@ func (s *FileServer) loop() {
 	for {
 		select {
 		case rpc := <-s.Transport.Consume():
+			log.Println(rpc)
 			var msg Message
 			if err := gob.NewDecoder(bytes.NewReader(rpc.Payload)).Decode(&msg); err != nil {
 				log.Println(err)
 			}
 
-			fmt.Printf("received: %s\n", string(msg.Payload.([]byte)))
+			// fmt.Printf("received: %s\n", string(msg.Payload.([]byte)))
+
+			fmt.Printf("Payload : %+v\n", msg.Payload)
 
 			peer, ok := s.peers[rpc.From]
 			if !ok {
@@ -144,6 +152,8 @@ func (s *FileServer) loop() {
 			}
 
 			fmt.Printf("received: %s\n", string(b))
+
+			peer.(*p2p.TCPPeer).Wg.Done()
 
 			// if err := s.handleMessage(&m); err != nil {
 			// 	log.Println(err)
@@ -186,6 +196,6 @@ func (s *FileServer) Start() error {
 	return nil
 }
 
-// func init() {
-// 	gob.Register(DataMessage{})
-// }
+func init() {
+	gob.Register(MessageStoreFile{})
+}
