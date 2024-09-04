@@ -131,46 +131,44 @@ func (s *FileServer) loop() {
 	for {
 		select {
 		case rpc := <-s.Transport.Consume():
-			log.Println(rpc)
 			var msg Message
 			if err := gob.NewDecoder(bytes.NewReader(rpc.Payload)).Decode(&msg); err != nil {
 				log.Println(err)
+				return
 			}
 
-			// fmt.Printf("received: %s\n", string(msg.Payload.([]byte)))
-
-			fmt.Printf("Payload : %+v\n", msg.Payload)
-
-			peer, ok := s.peers[rpc.From]
-			if !ok {
-				panic("peer not found in the peer map")
+			if err := s.handleMessage(rpc.From, &msg); err != nil {
+				log.Println(err)
+				return
 			}
 
-			b := make([]byte, 1000)
-			if _, err := peer.Read(b); err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("received: %s\n", string(b))
-
-			peer.(*p2p.TCPPeer).Wg.Done()
-
-			// if err := s.handleMessage(&m); err != nil {
-			// 	log.Println(err)
-			// }
 		case <-s.quitch:
 			return
 		}
 	}
 }
 
-// func (s *FileServer) handleMessage(msg *Message) error {
-// 	switch v := msg.Payload.(type) {
-// 	case *DataMessage:
-// 		fmt.Printf("received data : %+v\n", v)
-// 	}
-// 	return nil
-// }
+func (s *FileServer) handleMessage(from string, msg *Message) error {
+	switch v := msg.Payload.(type) {
+	case MessageStoreFile:
+		return s.handleMessageStoreFile(from, v)
+	}
+	return nil
+}
+
+func (s *FileServer) handleMessageStoreFile(from string, msg MessageStoreFile) error {
+	peer, ok := s.peers[from]
+	if !ok {
+		return fmt.Errorf("peer (%s) could not be found in the peer list", from)
+	}
+
+	if err := s.store.Write(msg.Key, peer); err != nil {
+		return err
+	}
+
+	peer.(*p2p.TCPPeer).Wg.Done()
+	return nil
+}
 
 func (s *FileServer) bootstrapNetwork() error {
 	for _, addr := range s.BootstrapNodes {
