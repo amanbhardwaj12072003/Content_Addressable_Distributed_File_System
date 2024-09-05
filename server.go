@@ -211,6 +211,12 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 		return nil
 	}
 
+	rc, ok := r.(io.ReadCloser)
+	if ok {
+		fmt.Println("closing the readCloser")
+		defer rc.Close()
+	}
+
 	peer, ok := s.peers[from]
 	if !ok {
 		return fmt.Errorf("peer %s not found in map", from)
