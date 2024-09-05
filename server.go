@@ -80,10 +80,15 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 		var fileSize int64
 		binary.Read(peer, binary.LittleEndian, &fileSize)
 
-		n, err := s.store.Write(key, io.LimitReader(peer, 22))
+		n, err := s.store.writeDecrypt(s.EncKey, key, io.LimitReader(peer, fileSize))
 		if err != nil {
 			return nil, err
 		}
+
+		// n, err := s.store.Write(key, io.LimitReader(peer, 22))
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		fmt.Printf("[%s] received (%d) bytes over the network from [%s] \n", s.Transport.Addr(), n, peer.RemoteAddr())
 
