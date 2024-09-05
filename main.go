@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
+	"bytes"
 	"log"
 	"time"
 
@@ -14,11 +13,11 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 		ListenAddr:    listenAddr,
 		HandshakeFunc: p2p.NOPHandshakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
-		// Todo: onpeer func
 	}
 	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
 
 	fileServerOpts := FileServerOpts{
+		EncKey:            newEncryptionKey(),
 		StorageRoot:       listenAddr + "_network",
 		PathTransformFunc: CASPathTransformFunc,
 		Transport:         tcpTransport,
@@ -42,20 +41,19 @@ func main() {
 	go server_2.Start()
 	time.Sleep(1 * time.Second)
 
-	// data := bytes.NewReader([]byte("my big data file here!"))
-	// server_2.Store("catspicture.jpg", data)
-	// time.Sleep(5 * time.Millisecond)
+	data := bytes.NewReader([]byte("my big data file here!"))
+	server_2.Store("catspicture.jpg", data)
 
-	r, err := server_2.Get("catspicture.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// r, err := server_2.Get("catspicture.jpg")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// b, err := ioutil.ReadAll(r)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	fmt.Println(string(b))
+	// fmt.Println(string(b))
 
 }
