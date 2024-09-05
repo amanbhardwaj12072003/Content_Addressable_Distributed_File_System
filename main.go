@@ -1,7 +1,8 @@
 package main
 
 import (
-	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -41,9 +42,20 @@ func main() {
 	go server_2.Start()
 	time.Sleep(1 * time.Second)
 
-	data := bytes.NewReader([]byte("my big data file here!"))
+	// data := bytes.NewReader([]byte("my big data file here!"))
+	// server_2.Store("myprivatekey", data)
 
-	server_2.StoreData("myprivatekey", data)
+	r, err := server_2.Get("myprivatekey")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(b))
 
 	select {}
 }

@@ -51,7 +51,15 @@ type MessageStoreFile struct {
 	Size int64
 }
 
-func (s *FileServer) broadcast(msg *Message) error {
+func (s *FileServer) Get(key string) (io.Reader, error) {
+	if s.store.Has(key) {
+		return s.store.Read(key)
+	}
+	panic("dont have file locally")
+	return nil, nil
+}
+
+func (s *FileServer) stream(msg *Message) error {
 	peers := []io.Writer{}
 	for _, peer := range s.peers {
 		peers = append(peers, peer)
@@ -60,7 +68,21 @@ func (s *FileServer) broadcast(msg *Message) error {
 	return gob.NewEncoder(multiWriter).Encode(msg)
 }
 
-func (s *FileServer) StoreData(key string, r io.Reader) error {
+func (s *FileServer) broadcast(msg *Message) error {
+	buf := new(bytes.Buffer)
+	if err := gob.NewEncoder(buf).Encode(msg); err != nil {
+		return err
+	}
+
+	for _, peer := range s.peers {
+		if err := peer.Send(buf.Bytes()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *FileServer) Store(key string, r io.Reader) error {
 	var (
 		fileBuffer = new(bytes.Buffer)
 		tee        = io.TeeReader(r, fileBuffer)
@@ -78,19 +100,13 @@ func (s *FileServer) StoreData(key string, r io.Reader) error {
 		},
 	}
 
-	msgBuf := new(bytes.Buffer)
-	if err := gob.NewEncoder(msgBuf).Encode(msg); err != nil {
+	if err := s.broadcast(&msg); err != nil {
 		return err
-	}
-
-	for _, peer := range s.peers {
-		if err := peer.Send(msgBuf.Bytes()); err != nil {
-			return err
-		}
 	}
 
 	time.Sleep(time.Second * 3)
 
+	// TODO: Use a multiwriter here
 	for _, peer := range s.peers {
 		n, err := io.Copy(peer, fileBuffer)
 		if err != nil {
