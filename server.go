@@ -211,8 +211,7 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 		return nil
 	}
 
-	rc, ok := r.(io.ReadCloser)
-	if ok {
+	if rc, ok := r.(io.ReadCloser); ok {
 		fmt.Println("closing the readCloser")
 		defer rc.Close()
 	}
