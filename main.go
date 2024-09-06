@@ -52,7 +52,7 @@ func main() {
 		data := bytes.NewReader([]byte("my big data file here!"))
 		server_3.Store(key, data)
 
-		if err := server_3.store.Delete(key); err != nil {
+		if err := server_3.store.Delete(server_3.ID, key); err != nil {
 			log.Fatal(err)
 		}
 
