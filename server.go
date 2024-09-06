@@ -66,13 +66,13 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 	fmt.Printf("[%s] don't have file (%s) locally , fetching from network... \n", s.Transport.Addr(), key)
 	msg := Message{
 		Payload: MessageGetFile{
-			Key: key,
+			Key: hashKey(key),
 		},
 	}
 	if err := s.broadcast(&msg); err != nil {
 		return nil, err
 	}
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second * 3)
 
 	for _, peer := range s.peers {
 		// First read the file size so we can limit the amount of bytes that we read
@@ -97,15 +97,6 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 
 	_, r, err := s.store.Read(key)
 	return r, err
-}
-
-func (s *FileServer) stream(msg *Message) error {
-	peers := []io.Writer{}
-	for _, peer := range s.peers {
-		peers = append(peers, peer)
-	}
-	multiWriter := io.MultiWriter(peers...)
-	return gob.NewEncoder(multiWriter).Encode(msg)
 }
 
 func (s *FileServer) broadcast(msg *Message) error {
@@ -136,7 +127,7 @@ func (s *FileServer) Store(key string, r io.Reader) error {
 
 	msg := Message{
 		Payload: MessageStoreFile{
-			Key:  key,
+			Key:  hashKey(key),
 			Size: size + 16, // As we appended the IV to the encryption key
 		},
 	}
@@ -262,12 +253,13 @@ func (s *FileServer) handleMessageStoreFile(from string, msg MessageStoreFile) e
 }
 
 func (s *FileServer) bootstrapNetwork() error {
+	//fmt.Println("Server:", s)
 	for _, addr := range s.BootstrapNodes {
 		if len(addr) == 0 {
 			continue
 		}
-		fmt.Println("attempting to connect to the remote node: ", addr)
 		go func(addr string) {
+			fmt.Printf("[%s] attempting to connect to the remote node [%s] \n", s.Transport.Addr(), addr)
 			if err := s.Transport.Dial(addr); err != nil {
 				log.Println("dial error: ", err)
 			}
@@ -277,6 +269,7 @@ func (s *FileServer) bootstrapNetwork() error {
 }
 
 func (s *FileServer) Start() error {
+	fmt.Printf("[%s] starting fileserver \n", s.Transport.Addr())
 	if err := s.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
