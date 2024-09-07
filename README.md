@@ -63,7 +63,7 @@ Uses Gob encoding for efficient serialization and deserialization of messages.
 ```
 Distributed_File_Storage/
 │
-├── :3001_network/
+├── :3000_network/
 │   ├── ID/
 │        ├── file_1
 │        ├── file_2
@@ -73,7 +73,7 @@ Distributed_File_Storage/
 │        ├── file_1
 │        ├── file_2
 │        ├── file_3
-├── :3001_network/
+├── :3002_network/
 │   ├── ID/
 │        ├── file_1
 │        ├── file_2
